@@ -1,0 +1,14 @@
+{
+  "user_client_projects": [
+    {
+      "user_id": "e0209ec4-3fc4-4cb2-873d-ca9dc0ef596b",
+      "client_id": "AgentMira",
+      "project_ids": ["backend-admin-module", "market-savant", "offer-savant"]
+    },
+    {
+      "user_id": "user_456",
+      "client_id": "client_789",
+      "project_ids": ["project_4", "project_5"]
+    }
+  ]
+}

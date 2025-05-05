@@ -1,0 +1,18 @@
+{
+  "users": [
+    {
+      "id": "11b4ef93-11fe-45f2-886e-6f9dc51719d1",
+      "user_id": "e0209ec4-3fc4-4cb2-873d-ca9dc0ef596b",
+      "first_name": "Sagar",
+      "last_name": "python",
+      "email": "sagarpython@gmail.com",
+      "password": "$2b$12$NkIPXpiSV7.ZDCsFBuHUjeaN1amYQXwya3JYUbD/w3iyNf3E18UWa",
+      "phone_number": null,
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InNhZ2FycHl0aG9uQGdtYWlsLmNvbSIsInVzZXJfaWQiOiJlMDIwOWVjNC0zZmM0LTRjYjItODczZC1jYTlkYzBlZjU5NmIiLCJleHAiOjE3NDY0Mzg2NDB9.a3TWJdsco1aZwhYMCBKor07z7K3qkkEA_xIWeFC9M34",
+      "last_logged_in": "2025-05-05T08:50:40.637769",
+      "sign_up_date": "2025-05-05T07:08:57.204475",
+      "is_active": true,
+      "is_validate": false
+    }
+  ]
+}

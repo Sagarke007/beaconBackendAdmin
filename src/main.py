@@ -10,7 +10,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from starlette.responses import JSONResponse
 
-from router import gatekeeper
+from router.gatekeeper import gatekeeper_router
+from router.user import user_router
 
 app = FastAPI()
 
@@ -18,7 +19,11 @@ app = FastAPI()
 # Middleware: CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:3999",
+        "http://localhost:5173",
+        "http://dev.viewcurry.com"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -48,9 +53,9 @@ async def http_exception_handler(_: Request, exc: HTTPException):
     )
 
 
-app.include_router(gatekeeper.router, tags=["mira - qna"])
+app.include_router(gatekeeper_router.router,)
 
-
+app.include_router(user_router.router)
 @app.get("/")
 async def read_root():
     """app root checking function

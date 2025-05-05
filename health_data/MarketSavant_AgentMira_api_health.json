@@ -1,0 +1,145 @@
+{
+  "client_id": "AgentMira",
+  "project_id": "MarketSavant",
+  "endpoints": [
+    {
+      "_path": "/first_page",
+      "type": "post",
+      "class": "Module",
+      "responses": {
+        "code": 200,
+        "message": "Successful response"
+      },
+      "summary": "fetch close listing data from snap shot data",
+      "response_time": 0,
+      "functions": [
+        {
+          "name": "run_first_page_with_filters",
+          "params": [
+            {
+              "name": "filter_data",
+              "type": "<class 'router.market_dashboard.model.FilterData'>"
+            },
+            {
+              "name": "_",
+              "type": "<class 'str'>"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "_path": "/second_page",
+      "type": "post",
+      "class": "Module",
+      "responses": {
+        "code": 200,
+        "message": "Successful response"
+      },
+      "summary": "fetch active listing data from monthly kpis data",
+      "response_time": 0,
+      "functions": [
+        {
+          "name": "run_second_page_with_filters",
+          "params": [
+            {
+              "name": "filter_data",
+              "type": "<class 'router.market_dashboard.model.FilterData'>"
+            },
+            {
+              "name": "_",
+              "type": "<class 'str'>"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "_path": "/summary",
+      "type": "post",
+      "class": "Module",
+      "responses": {
+        "code": 200,
+        "message": "Successful response"
+      },
+      "summary": "fetch score data",
+      "response_time": 0,
+      "functions": [
+        {
+          "name": "fetch_summary",
+          "params": [
+            {
+              "name": "filter_data",
+              "type": "<class 'router.market_dashboard.model.FilterData'>"
+            },
+            {
+              "name": "_",
+              "type": "<class 'str'>"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "_path": "/filter-list",
+      "type": "get",
+      "class": "Module",
+      "responses": {
+        "code": 200,
+        "message": "Successful response"
+      },
+      "summary": "fetch filter list",
+      "response_time": 0,
+      "functions": [
+        {
+          "name": "fetch_month",
+          "params": [
+            {
+              "name": "_",
+              "type": "<class 'str'>"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "_path": "/search",
+      "type": "post",
+      "class": "Module",
+      "responses": {
+        "code": 200,
+        "message": "Successful response"
+      },
+      "summary": "API endpoint to search for matching locations.",
+      "response_time": 0,
+      "functions": [
+        {
+          "name": "search_locations",
+          "params": [
+            {
+              "name": "payload",
+              "type": "<class 'router.market_dashboard.model.SearchRequest'>"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "_path": "/",
+      "type": "get",
+      "class": "Module",
+      "responses": {
+        "code": 200,
+        "message": "Successful response"
+      },
+      "summary": "app root checking function for agent chat",
+      "response_time": 0,
+      "functions": [
+        {
+          "name": "read_root",
+          "params": []
+        }
+      ]
+    }
+  ]
+}

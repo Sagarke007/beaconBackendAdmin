@@ -1,0 +1,15 @@
+annotated-types
+anyio
+bcrypt
+click
+colorama
+fastapi
+h11
+idna
+pydantic
+pydantic_core
+sniffio
+starlette
+uvicorn
+pydantic[email]
+pyjwt

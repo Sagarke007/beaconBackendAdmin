@@ -6,6 +6,7 @@ import json
 
 from shared.http_responses import HTTPResponse
 
+
 router = APIRouter()
 
 LOCAL_DIR = Path("../health_data")
