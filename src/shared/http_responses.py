@@ -1,6 +1,7 @@
 """
 HTTP Response handler
 """
+from typing import Optional, Any
 
 from fastapi.responses import JSONResponse as fastapi_jsonresponse
 
@@ -37,10 +38,10 @@ class HTTPResponse:
     }
 
     def success(
-        self,
-        response_data: None = None,
-        response_message: str = None,
-        response_code: int = SUCCESS,
+            self,
+            response_data: Optional[Any] = None,
+            response_message: Optional[str] = None,
+            response_code: int = SUCCESS,
     ):
         """
         Function returns a successful HTTP Response code with exposing of the data

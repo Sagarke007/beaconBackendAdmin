@@ -16,6 +16,7 @@ Functions:
 - verify_password(plain_password: str, hashed_password: str) -> bool: Verifies if a plain password matches a hashed password.
 """
 import base64
+import json
 import re
 import secrets
 import os
@@ -85,3 +86,6 @@ def encode_to_base64(data: str) -> str:
 def decode_from_base64(data: str) -> str:
     """Decodes a Base64-encoded string."""
     return base64.b64decode(data.encode("utf-8")).decode("utf-8")
+
+
+

@@ -9,7 +9,6 @@ from fastapi import APIRouter, Depends
 
 import root_dir_getter  # pylint: disable=unused-import
 
-from shared.user_client_project import UserClientProjectManager
 
 root_dir_getter.set_root_dir(__file__)  # pylint: disable=wrong-import-position
 
@@ -33,7 +32,7 @@ from shared.utils import (
 router = APIRouter()
 USER_LOGIN = UserLoginHandler()
 # Initialize manager
-manager = UserClientProjectManager()
+
 
 @router.post("/signup")
 async def user_signup(request: UserRegistration):

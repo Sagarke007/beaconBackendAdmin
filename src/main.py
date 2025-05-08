@@ -12,6 +12,7 @@ from starlette.responses import JSONResponse
 
 from router.gatekeeper import gatekeeper_router
 from router.user import user_router
+from router.beacon import beacon_router
 
 app = FastAPI()
 
@@ -55,7 +56,7 @@ async def http_exception_handler(_: Request, exc: HTTPException):
 
 app.include_router(gatekeeper_router.router, prefix="/gatekeeper")
 app.include_router(user_router.router, prefix="/user")
-
+app.include_router(beacon_router.router, prefix="/insights")
 @app.get("/")
 async def read_root():
     """app root checking function
