@@ -39,7 +39,6 @@ class UserClientProjectManager:
         # Add new entry
         data["user_client_projects"].append({
             "user_id": user_id,
-            "client_id": client_id,
             "project_ids": project_ids
         })
 
@@ -58,7 +57,7 @@ class UserClientProjectManager:
         data = self._load_data()
         for entry in data["user_client_projects"]:
             if entry["user_id"] == user_id:
-                return entry["client_id"]
+                return entry["client_name"]
         return None
 
     def add_project_to_user(self, user_id: str, project_id: str) -> None:

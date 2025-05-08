@@ -53,9 +53,9 @@ async def http_exception_handler(_: Request, exc: HTTPException):
     )
 
 
-app.include_router(gatekeeper_router.router,)
+app.include_router(gatekeeper_router.router, prefix="/gatekeeper")
+app.include_router(user_router.router, prefix="/user")
 
-app.include_router(user_router.router)
 @app.get("/")
 async def read_root():
     """app root checking function

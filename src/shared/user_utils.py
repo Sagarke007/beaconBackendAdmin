@@ -147,7 +147,6 @@ class UserLoginHandler:
         Authenticates a user based on the provided email and password.
         """
         user = self._find_user_by_email(email, include_all=False)
-        print(self.secret_key)
         if user and bcrypt.checkpw(
                 password.encode("utf-8"), user.get("password").encode("utf-8")
         ):
