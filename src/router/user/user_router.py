@@ -423,5 +423,3 @@ async def validate_identity(request: UserEmailRequest, otp: str):
         return HTTPResponse().failed(
             response_message="An error occurred while resetting the password. Please try again."
         )
-
-

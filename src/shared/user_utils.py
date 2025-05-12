@@ -18,11 +18,7 @@ from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 # Local application/library imports
-from shared.utils import (
-    verify_password,
-    hash_password,
-    SECRET_KEY
-)
+from shared.utils import verify_password, hash_password, SECRET_KEY
 
 import root_dir_getter
 
@@ -49,7 +45,12 @@ class UserLoginHandler:
         """Initialize the JSON storage file if it doesn't exist"""
         if not JSON_STORAGE_PATH.exists():
             with open(JSON_STORAGE_PATH, "w", encoding="utf-8") as f:
-                json.dump({"users": [],}, f)
+                json.dump(
+                    {
+                        "users": [],
+                    },
+                    f,
+                )
 
     def _load_data(self) -> Dict[str, Any]:
         """Load data from JSON file"""
@@ -62,7 +63,7 @@ class UserLoginHandler:
             json.dump(data, f, indent=2)
 
     def _find_user_by_email(
-            self, email: str, include_all: bool = True
+        self, email: str, include_all: bool = True
     ) -> Optional[Dict[str, Any]]:
         """
         Finds a user by their email address in the JSON storage.
@@ -98,12 +99,12 @@ class UserLoginHandler:
         return None
 
     def add_user(
-            self,
-            first_name: str,
-            last_name: str,
-            email: str,
-            password: str,
-            phone_number: Optional[str],
+        self,
+        first_name: str,
+        last_name: str,
+        email: str,
+        password: str,
+        phone_number: Optional[str],
     ) -> str:
         """
         Adds a new user to the system.
@@ -148,7 +149,7 @@ class UserLoginHandler:
         """
         user = self._find_user_by_email(email, include_all=False)
         if user and bcrypt.checkpw(
-                password.encode("utf-8"), user.get("password").encode("utf-8")
+            password.encode("utf-8"), user.get("password").encode("utf-8")
         ):
             token = jwt.encode(
                 {
@@ -165,7 +166,9 @@ class UserLoginHandler:
             for idx, u in enumerate(data["users"]):
                 if u["user_id"] == user["user_id"]:
                     data["users"][idx]["token"] = token
-                    data["users"][idx]["last_logged_in"] = datetime.datetime.utcnow().isoformat()
+                    data["users"][idx][
+                        "last_logged_in"
+                    ] = datetime.datetime.utcnow().isoformat()
                     self._save_data(data)
                     break
 
@@ -193,8 +196,7 @@ class UserLoginHandler:
         return None, "", "", "", "", ""
 
     async def authenticate_token(
-            self,
-            credentials: HTTPAuthorizationCredentials = Depends(SECURITY)
+        self, credentials: HTTPAuthorizationCredentials = Depends(SECURITY)
     ):
         """
         Authenticates the JWT token against users stored in JSON file.
@@ -219,10 +221,7 @@ class UserLoginHandler:
             # Get user from JSON storage
             user_id = payload["user_id"]
             data = self._load_data()
-            user = next(
-                (u for u in data["users"] if u["user_id"] == user_id),
-                None
-            )
+            user = next((u for u in data["users"] if u["user_id"] == user_id), None)
 
             # Verify token matches stored token and user is active
             if not user or user.get("token") != incoming_token:
@@ -235,13 +234,16 @@ class UserLoginHandler:
         except jwt.exceptions.DecodeError as exc:
             raise HTTPException(status_code=401, detail="Invalid token format") from exc
         except jwt.exceptions.InvalidSignatureError as exc:
-            raise HTTPException(status_code=401, detail="Token signature invalid") from exc
+            raise HTTPException(
+                status_code=401, detail="Token signature invalid"
+            ) from exc
         except KeyError as exc:
-            raise HTTPException(status_code=401, detail="Missing required token claims") from exc
+            raise HTTPException(
+                status_code=401, detail="Missing required token claims"
+            ) from exc
         except Exception as exc:
             raise HTTPException(
-                status_code=500,
-                detail=f"Authentication error: {str(exc)}"
+                status_code=500, detail=f"Authentication error: {str(exc)}"
             ) from exc
 
     def decode_jwt_token(self, token: str) -> tuple:
@@ -260,6 +262,7 @@ class UserLoginHandler:
             return (True, payload)
         except Exception as exc:
             raise HTTPException(status_code=401, detail="Invalid token") from exc
+
     def logout_user(self, user_id: str) -> bool:
         """
         Logs out a user by clearing their token.
@@ -325,7 +328,7 @@ class UserLoginHandler:
             return False, f"Unable to retrieve users: {str(e)}"
 
     def verify_and_change_password(
-            self, current_password: str, new_password: str, user_id: str
+        self, current_password: str, new_password: str, user_id: str
     ) -> tuple:
         """
         Verifies the current password and updates it to the new password if valid.
@@ -366,11 +369,9 @@ class UserLoginHandler:
                 break
 
         if not found:
-            data["reset_requests"].append({
-                "email": email,
-                "count": count,
-                "timestamp": timestamp
-            })
+            data["reset_requests"].append(
+                {"email": email, "count": count, "timestamp": timestamp}
+            )
 
         self._save_data(data)
 

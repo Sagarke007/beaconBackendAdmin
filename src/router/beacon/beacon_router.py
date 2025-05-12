@@ -5,6 +5,7 @@ from shared.user_utils import UserLoginHandler
 from router.beacon.model import Project
 from router.gatekeeper.gatekeeper_router import LOCAL_DIR
 from shared.http_responses import HTTPResponse
+import json
 
 DATA_FILE = "projects.json"
 USER_LOGIN = UserLoginHandler()
@@ -12,7 +13,9 @@ router = APIRouter()
 
 
 @router.post("/create_project")
-def create_project(request: Project, user_info: str = Depends(USER_LOGIN.authenticate_token)):
+def create_project(
+    request: Project, user_info: str = Depends(USER_LOGIN.authenticate_token)
+):
     """
     Create a new project for a user.
     """
@@ -30,9 +33,13 @@ def create_project(request: Project, user_info: str = Depends(USER_LOGIN.authent
         data["users"][user_id]["projects"].append(new_project)
         write_data(data, DATA_FILE)
 
-        return HTTPResponse().success(response_message=f"Successfully created project {new_project['name']}")
+        return HTTPResponse().success(
+            response_message=f"Successfully created project {new_project['name']}"
+        )
     except Exception as e:
-        return HTTPResponse().failed(response_message=f"Failed to create project: {str(e)}")
+        return HTTPResponse().failed(
+            response_message=f"Failed to create project: {str(e)}"
+        )
 
 
 @router.get("/projects")
@@ -51,7 +58,7 @@ def get_projects(user_info: str = Depends(USER_LOGIN.authenticate_token)):
 
         for project in projects:
             project_id = project.get("project_id")
-            file_path = LOCAL_DIR / user_id / f"{project_id}.json"
+            file_path = LOCAL_DIR / "api_endpoint" / user_id / f"{project_id}.json"
 
             framework = ""
             average_response_time = "0 seconds"
@@ -62,10 +69,14 @@ def get_projects(user_info: str = Depends(USER_LOGIN.authenticate_token)):
                     project_data = read_data(file_path)
                     apis = project_data.get("endpoints", [])
                     if apis:
-                        total_response_time = sum(api.get("response_time", 0) for api in apis)
+                        total_response_time = sum(
+                            api.get("response_time", 0) for api in apis
+                        )
                         api_count = len(apis)
                         framework = apis[-1].get("framework", "FastApi")
-                        average_response_time = f"{round(total_response_time / api_count, 4)} seconds"
+                        average_response_time = (
+                            f"{round(total_response_time / api_count, 4)} seconds"
+                        )
                 except Exception:
                     pass
 
@@ -85,12 +96,16 @@ def get_projects(user_info: str = Depends(USER_LOGIN.authenticate_token)):
             response_data={"client_name": client_name, "project": project_details}
         )
     except Exception as e:
-        return HTTPResponse().failed(response_message=f"Failed to fetch projects: {str(e)}")
+        return HTTPResponse().failed(
+            response_message=f"Failed to fetch projects: {str(e)}"
+        )
 
 
 @router.put("/update_project/{project_id}")
 def update_project(
-    project_id: str, request: Project, user_info: str = Depends(USER_LOGIN.authenticate_token)
+    project_id: str,
+    request: Project,
+    user_info: str = Depends(USER_LOGIN.authenticate_token),
 ):
     """
     Update a specific project by ID for the authenticated user.
@@ -110,11 +125,15 @@ def update_project(
                 )
         raise HTTPException(status_code=404, detail="Project not found")
     except Exception as e:
-        return HTTPResponse().failed(response_message=f"Failed to update project: {str(e)}")
+        return HTTPResponse().failed(
+            response_message=f"Failed to update project: {str(e)}"
+        )
 
 
 @router.delete("/delete_project/{project_id}")
-def delete_project(project_id: str, user_info: str = Depends(USER_LOGIN.authenticate_token)):
+def delete_project(
+    project_id: str, user_info: str = Depends(USER_LOGIN.authenticate_token)
+):
     """
     Delete a project by ID for the authenticated user.
     """
@@ -134,4 +153,97 @@ def delete_project(project_id: str, user_info: str = Depends(USER_LOGIN.authenti
 
         return HTTPResponse().success(response_message="Successfully deleted project")
     except Exception as e:
-        return HTTPResponse().failed(response_message=f"Failed to delete project: {str(e)}")
+        return HTTPResponse().failed(
+            response_message=f"Failed to delete project: {str(e)}"
+        )
+
+
+@router.get("/count/{project_id}")
+def get_status_code_summary(
+    project_id: str, user_info: str = Depends(USER_LOGIN.authenticate_token)
+):
+    """
+    Returns counts and URLs of 2xx, 4xx, 5xx status codes for authenticated user.
+    """
+    try:
+        _, user_info_data = user_info
+        user_id = user_info_data["user_id"]
+
+        summary = {
+            "2xx": {"count": 0, "projectUrl": []},
+            "4xx": {"count": 0, "projectUrl": []},
+            "5xx": {"count": 0, "projectUrl": []},
+        }
+
+        file_path = LOCAL_DIR / "api_log" / user_id / f"{project_id}.json"
+        if not file_path.exists():
+            return HTTPResponse().failed(response_message="Log file not found.")
+
+        with open(file_path, "r") as f:
+            try:
+                log_entries = json.load(f)
+            except json.JSONDecodeError as e:
+                return HTTPResponse().failed(response_message="Invalid JSON format.")
+
+        for entry in log_entries:
+            try:
+                status_code = int(entry.get("status_code", 0))
+                full_url = entry.get("full_url", "N/A")
+
+                if 200 <= status_code < 300:
+                    summary["2xx"]["count"] += 1
+                    summary["2xx"]["projectUrl"].append(full_url)
+                elif 400 <= status_code < 500:
+                    summary["4xx"]["count"] += 1
+                    summary["4xx"]["projectUrl"].append(full_url)
+                elif 500 <= status_code < 600:
+                    summary["5xx"]["count"] += 1
+                    summary["5xx"]["projectUrl"].append(full_url)
+
+            except Exception:
+                continue  # Skip problematic entries
+
+        return HTTPResponse().success(response_data=summary)
+
+    except Exception as e:
+        return HTTPResponse().failed(
+            response_message=f"Failed to summarize logs: {str(e)}"
+        )
+
+
+@router.get("/logs/{project_id}")
+def get_4xx_logs(
+    project_id: str, user_info: str = Depends(USER_LOGIN.authenticate_token)
+):
+    """
+    Returns all log entries with 4xx status codes for authenticated user.
+    """
+    try:
+        _, user_info_data = user_info
+        user_id = user_info_data["user_id"]
+
+        file_path = LOCAL_DIR / "api_log" / user_id / f"{project_id}.json"
+        if not file_path.exists():
+            return HTTPResponse().failed(response_message="Log file not found.")
+
+        with open(file_path, "r") as f:
+            try:
+                log_entries = json.load(f)
+            except json.JSONDecodeError:
+                return HTTPResponse().failed(response_message="Invalid JSON format.")
+
+        filtered_logs = []
+        for entry in log_entries:
+            try:
+                status_code = int(entry.get("status_code", 0))
+                if 400 <= status_code < 600:
+                    filtered_logs.append(entry)
+            except Exception:
+                continue  # Skip problematic entries
+
+        return HTTPResponse().success(response_data=filtered_logs)
+
+    except Exception as e:
+        return HTTPResponse().failed(
+            response_message=f"Failed to retrieve 4xx logs: {str(e)}"
+        )
