@@ -243,7 +243,7 @@ class UserLoginHandler:
             ) from exc
         except Exception as exc:
             raise HTTPException(
-                status_code=500, detail=f"Authentication error: {str(exc)}"
+                status_code=401, detail=f"Authentication error: {str(exc)}"
             ) from exc
 
     def decode_jwt_token(self, token: str) -> tuple:

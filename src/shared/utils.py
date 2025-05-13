@@ -22,10 +22,8 @@ import secrets
 import os
 import bcrypt
 from faker import Faker
-from pydantic import BaseModel
-from typing import get_args, get_origin, Union
 import random
-
+from typing import Dict, Any
 
 from dotenv import load_dotenv
 
@@ -94,79 +92,52 @@ def decode_from_base64(data: str) -> str:
     return base64.b64decode(data.encode("utf-8")).decode("utf-8")
 
 
-from faker import Faker
-import random
-import json
-from typing import Dict, Any, Optional
-
-fake = Faker()
 
 
-def generate_fake_value(field_name: str, field_type: str) -> Optional[Any]:
-    """Generate appropriate fake data based on field name and type string"""
+
+def generate_fake_value(field_name: str, field_type: str) -> Any:
+    """Generate appropriate fake data based on field name and type"""
     field_name = field_name.lower()
+    field_type = field_type.lower()
 
-    # Handle string types
+    # String types
     if field_type == "string":
-        if field_name in {"email", "email_address", "username"}:
-            return fake.unique.email()
-        if "password" in field_name:
+        if any(email_key in field_name for email_key in ["email", "mail"]):
+            return fake.email()
+        elif "password" in field_name:
             return fake.password(length=12, special_chars=True)
-        if "name" in field_name:
+        elif "phone" in field_name:
+            return fake.phone_number()
+        elif "name" in field_name:
             if "first" in field_name:
                 return fake.first_name()
-            if "last" in field_name:
+            elif "last" in field_name:
                 return fake.last_name()
-            if "nick" in field_name or "user" in field_name:
-                return fake.user_name()
             return fake.name()
-        if "phone" in field_name:
-            return fake.phone_number()
-        if "token" in field_name:
+        elif any(id_key in field_name for id_key in ["token", "uuid", "id"]):
             return fake.uuid4()
-        if "otp" in field_name:
-            return str(random.randint(100000, 999999))
-        if "url" in field_name:
+        elif "url" in field_name:
             return fake.url()
-        if "date" in field_name or "time" in field_name:
+        elif any(date_key in field_name for date_key in ["date", "time"]):
             return fake.iso8601()
         return fake.word()
 
-    # Handle other types
-    elif field_type == "boolean":
-        return random.choice([True, False])
-    elif field_type == "integer":
+    # Numeric types
+    elif field_type in ["integer", "number"]:
         return random.randint(1, 100)
-    elif field_type == "number" or field_type == "float":
+    elif field_type == "float":
         return round(random.uniform(1, 100), 2)
 
-    # Fallback for unknown types
+    # Boolean
+    elif field_type == "boolean":
+        return random.choice([True, False])
+
+    # Fallback
     return None
 
-
-def enhance_endpoints_with_fake_data(endpoints_data: Dict[str, Any]) -> Dict[str, Any]:
-    """Enhance each endpoint with generated fake_data based on its schema"""
-    enhanced_endpoints = []
-
-    for endpoint in endpoints_data:
-        # Create a copy of the endpoint to avoid modifying the original
-        enhanced_endpoint = endpoint.copy()
-
-        if (
-            "schema" in enhanced_endpoint
-            and "request_body" in enhanced_endpoint["schema"]
-        ):
-            # Generate fake data
-            fake_payload = {
-                field_name: generate_fake_value(field_name, field_type)
-                for field_name, field_type in enhanced_endpoint["schema"][
-                    "request_body"
-                ].items()
-            }
-
-            # Add the fake_data at the same level as schema
-            enhanced_endpoint["fake_data"] = fake_payload
-
-        enhanced_endpoints.append(enhanced_endpoint)
-
-    return enhanced_endpoints
+def enhance_endpoints_with_fake_data(schema: Dict[str, str]) -> Dict[str, Any]:
+    """Generate fake data for each field in the schema"""
+    return {
+        field: generate_fake_value(field, field_type)
+        for field, field_type in schema.items()
+    }

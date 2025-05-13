@@ -6,6 +6,9 @@ from shared.user_utils import UserLoginHandler
 from shared.http_responses import HTTPResponse
 from shared.utils import enhance_endpoints_with_fake_data
 
+from router.gatekeeper.model import SchemaRequest
+
+
 router = APIRouter()
 
 LOCAL_DIR = Path("../health_data")
@@ -60,9 +63,7 @@ async def get_health_data(
         with open(file_path, "r") as f:
             data = json.load(f)
         endpoints = data.get("endpoints", {})
-        fake_payload = enhance_endpoints_with_fake_data(endpoints)
-
-        return HTTPResponse().success(response_data=fake_payload)
+        return HTTPResponse().success(response_data=endpoints)
     except Exception as e:
         return HTTPResponse().failed(
             response_message=f"Failed to retrieve health data: {str(e)}"
@@ -113,4 +114,33 @@ async def save_api_response(payload: dict = Body(...)):
     except Exception as e:
         return HTTPResponse().failed(
             response_message=f"Failed to save response: {str(e)}"
+        )
+
+
+@router.post("/schema/generate-data")
+async def generate_data(req: SchemaRequest):
+
+    """
+    Generate fake data based on provided schema
+
+    Example Request Body:
+    {
+        "schema_config": {
+            "first_name": "string",
+            "last_name": "string",
+            "email": "string",
+            "age": "number",
+            "is_active": "boolean"
+        }
+    }
+    """
+    try:
+        if not req.schema_config:
+            raise HTTPException(status_code=400, detail="Schema cannot be empty")
+
+        data = enhance_endpoints_with_fake_data(req.schema_config)
+        return HTTPResponse().success(response_data=data)
+    except Exception as e:
+        return HTTPResponse().failed(
+            response_message=f"Failed to generate data: {str(e)}"
         )
