@@ -92,9 +92,6 @@ def decode_from_base64(data: str) -> str:
     return base64.b64decode(data.encode("utf-8")).decode("utf-8")
 
 
-
-
-
 def generate_fake_value(field_name: str, field_type: str) -> Any:
     """Generate appropriate fake data based on field name and type"""
     field_name = field_name.lower()
@@ -135,9 +132,50 @@ def generate_fake_value(field_name: str, field_type: str) -> Any:
     # Fallback
     return None
 
+
 def enhance_endpoints_with_fake_data(schema: Dict[str, str]) -> Dict[str, Any]:
     """Generate fake data for each field in the schema"""
     return {
         field: generate_fake_value(field, field_type)
         for field, field_type in schema.items()
     }
+
+
+def create_dsn(user_id: str, project_id: str) -> str:
+    """Generate a Data Source Name (DSN) for database connections."""
+    raw_string = f"{user_id}:{project_id}:{SECRET_KEY}"
+    dsn = base64.urlsafe_b64encode(raw_string.encode()).decode()
+    return dsn
+
+
+def decode_dsn(dsn: str) -> tuple:
+    """Decode the DSN to extract user_id, project_id, and SECRET_KEY."""
+
+    decoded_bytes = base64.urlsafe_b64decode(dsn)
+    decoded_string = decoded_bytes.decode()
+    user_id, project_id, secret_key = decoded_string.split(":")
+
+    # Optionally, verify the secret_key here if needed
+    if secret_key != SECRET_KEY:
+        return False, None, "Invalid SECRET_KEY"
+
+    return True, user_id, project_id
+
+
+def check_client_id_exists(client_id: str, data: dict) -> bool:
+    """Check if the given client_id exists in the user data."""
+    for user in data["users"]:
+        if user["user_id"] == client_id:
+            return True
+    return False
+
+
+# Function to check if a project_id exists
+def check_project_id_exists(project_id: str, data: dict) -> bool:
+    """Check if the given project_id exists in the user data."""
+
+    for user_id, user_data in data["users"].items():
+        for project in user_data["projects"]:
+            if project["project_id"] == project_id:
+                return True
+    return False
