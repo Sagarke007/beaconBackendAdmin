@@ -1,0 +1,110 @@
+"""
+This module provides utility functions to extract and process project information for insights.
+"""
+
+from collections import defaultdict
+import json
+from datetime import datetime
+from pathlib import Path
+
+from shared.database import read_data
+
+PROJECTS_FILE = "projects.json"
+LOCAL_DIR = Path("../health_data")
+
+
+def project_information(user_id: str):
+    """
+    Function to fetch project information for a given user ID.
+    It reads the data from the specified JSON files and processes it to extract relevant details.
+    """
+    # Read the data file
+    data = read_data(PROJECTS_FILE)
+    projects = data["users"].get(user_id, {}).get("projects", [])
+
+    project_details = []
+
+    for project in projects:
+        project_id = project.get("project_id")
+        dsn = project.get("dsn", "")
+        endpoint_file_path = LOCAL_DIR / "api_endpoint" / user_id / f"{project_id}.json"
+        log_file_path = LOCAL_DIR / "api_log" / user_id / f"{project_id}.json"
+
+        framework = ""
+        average_response_time = "0 sec"
+        api_count = 0
+        datewise_counts = defaultdict(lambda: {"2xx": 0, "4xx": 0, "5xx": 0})
+
+        # Endpoint stats (response time, framework, count)
+        if endpoint_file_path.exists():
+            try:
+                project_data = read_data(endpoint_file_path)
+                apis = project_data.get("endpoints", [])
+                if apis:
+                    total_response_time = sum(api.get("response_time", 0) for api in apis)
+                    api_count = len(apis)
+                    framework = apis[-1].get("framework", "FastApi")
+                    average_response_time = (
+                        f"{round(total_response_time / api_count, 4)} sec"
+                    )
+            except Exception:
+                pass
+
+        # Log summary (date-wise grouping)
+        if log_file_path.exists():
+            try:
+                with open(log_file_path, "r") as f:
+                    log_entries = json.load(f)
+
+                for entry in log_entries:
+                    try:
+                        status_code = int(entry.get("status_code", 0))
+                        timestamp = entry.get("timestamp") or entry.get("time") or ""
+                        if not timestamp:
+                            continue
+                        try:
+                            dt = datetime.fromisoformat(timestamp)
+                            date_str = dt.date().isoformat()
+                        except Exception:
+                            continue  # Skip bad timestamp
+
+                        if 200 <= status_code < 300:
+                            datewise_counts[date_str]["2xx"] += 1
+                        elif 400 <= status_code < 500:
+                            datewise_counts[date_str]["4xx"] += 1
+                        elif 500 <= status_code < 600:
+                            datewise_counts[date_str]["5xx"] += 1
+                    except Exception:
+                        continue
+            except Exception:
+                pass
+
+        # Convert to expected format
+        seq_dates = sorted(datewise_counts.keys())
+        datewise_summary = {
+            "seq": seq_dates,
+            "keys": ["2xx", "4xx", "5xx"],
+            "rowData": {
+                date: {
+                    "2xx": datewise_counts[date]["2xx"],
+                    "4xx": datewise_counts[date]["4xx"],
+                    "5xx": datewise_counts[date]["5xx"],
+                } for date in seq_dates
+            }
+        }
+
+        # Assemble final project info
+        project_details.append(
+            {
+                "projectName": project.get("name"),
+                "projectPath": project.get("url"),
+                "description": project.get("description"),
+                "projectID": project_id,
+                "framework": framework,
+                "averageResponseTime": average_response_time,
+                "dsn": dsn,
+                "apiCount": api_count,
+                "dateWiseSummary": datewise_summary,
+            }
+        )
+    return project_details
