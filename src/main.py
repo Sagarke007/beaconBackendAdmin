@@ -12,6 +12,7 @@ from starlette.responses import JSONResponse
 
 from router.gatekeeper import gatekeeper_router
 from router.user import user_router
+from router.insights import insights_router
 
 app = FastAPI()
 
@@ -22,7 +23,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3999",
         "http://localhost:5173",
-        "http://dev.viewcurry.com"
+        "http://dev.viewcurry.com",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -55,6 +56,8 @@ async def http_exception_handler(_: Request, exc: HTTPException):
 
 app.include_router(gatekeeper_router.router, prefix="/gatekeeper")
 app.include_router(user_router.router, prefix="/user")
+app.include_router(insights_router.router, prefix="/insights")
+
 
 @app.get("/")
 async def read_root():
