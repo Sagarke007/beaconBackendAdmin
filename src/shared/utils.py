@@ -92,44 +92,40 @@ def decode_from_base64(data: str) -> str:
     return base64.b64decode(data.encode("utf-8")).decode("utf-8")
 
 
+
 def generate_fake_value(field_name: str, field_type: str) -> Any:
     """Generate appropriate fake data based on field name and type"""
     field_name = field_name.lower()
     field_type = field_type.lower()
 
-    # String types
     if field_type == "string":
         if any(email_key in field_name for email_key in ["email", "mail"]):
             return fake.email()
-        elif "password" in field_name:
+        if "password" in field_name:
             return fake.password(length=12, special_chars=True)
-        elif "phone" in field_name:
+        if "phone" in field_name:
             return fake.phone_number()
-        elif "name" in field_name:
+        if "name" in field_name:
             if "first" in field_name:
                 return fake.first_name()
-            elif "last" in field_name:
+            if "last" in field_name:
                 return fake.last_name()
             return fake.name()
-        elif any(id_key in field_name for id_key in ["token", "uuid", "id"]):
+        if any(id_key in field_name for id_key in ["token", "uuid", "id"]):
             return fake.uuid4()
-        elif "url" in field_name:
+        if "url" in field_name:
             return fake.url()
-        elif any(date_key in field_name for date_key in ["date", "time"]):
+        if any(date_key in field_name for date_key in ["date", "time"]):
             return fake.iso8601()
         return fake.word()
 
-    # Numeric types
-    elif field_type in ["integer", "number"]:
+    if field_type in ["integer", "number"]:
         return random.randint(1, 100)
-    elif field_type == "float":
+    if field_type == "float":
         return round(random.uniform(1, 100), 2)
-
-    # Boolean
-    elif field_type == "boolean":
+    if field_type == "boolean":
         return random.choice([True, False])
 
-    # Fallback
     return None
 
 
@@ -174,7 +170,7 @@ def check_client_id_exists(client_id: str, data: dict) -> bool:
 def check_project_id_exists(project_id: str, data: dict) -> bool:
     """Check if the given project_id exists in the user data."""
 
-    for user_id, user_data in data["users"].items():
+    for _, user_data in data["users"].items():
         for project in user_data["projects"]:
             if project["project_id"] == project_id:
                 return True

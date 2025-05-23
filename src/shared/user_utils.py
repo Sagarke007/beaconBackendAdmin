@@ -231,20 +231,13 @@ class UserLoginHandler:
 
             return (True, payload)
 
+        # Fix for E0701: Reorder the except clauses
+        except jwt.exceptions.InvalidSignatureError as exc:
+            raise HTTPException(status_code=401, detail="Token signature invalid") from exc
         except jwt.exceptions.DecodeError as exc:
             raise HTTPException(status_code=401, detail="Invalid token format") from exc
-        except jwt.exceptions.InvalidSignatureError as exc:
-            raise HTTPException(
-                status_code=401, detail="Token signature invalid"
-            ) from exc
         except KeyError as exc:
-            raise HTTPException(
-                status_code=401, detail="Missing required token claims"
-            ) from exc
-        except Exception as exc:
-            raise HTTPException(
-                status_code=401, detail=f"Authentication error: {str(exc)}"
-            ) from exc
+            raise HTTPException(status_code=401, detail="Missing required token claims") from exc
 
     def decode_jwt_token(self, token: str) -> tuple:
         """
@@ -352,8 +345,8 @@ class UserLoginHandler:
                     return True, "Password successfully changed"
 
             return False, "User not found"
-        except Exception as e:
-            return False, f"An error occurred: {str(e)}"
+        except (FileNotFoundError, json.JSONDecodeError) as e:
+            return False, f"Unable to retrieve users: {str(e)}"
 
     def update_reset_request_info(self, email: str, count: int, timestamp: str):
         """

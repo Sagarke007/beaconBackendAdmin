@@ -1,8 +1,8 @@
 """
 Beacon Router
 """
+import json
 from datetime import datetime, timedelta
-
 from fastapi import Depends, APIRouter, HTTPException, Query
 from uuid import uuid4
 from shared.database import read_data, write_data
@@ -10,10 +10,9 @@ from shared.user_utils import UserLoginHandler
 from router.insights.model import Project
 from router.gatekeeper.gatekeeper_router import LOCAL_DIR
 from shared.http_responses import HTTPResponse
-import json
 from shared.utils import create_dsn
-
 from shared.insight_utils import project_information
+
 
 DATA_FILE = "projects.json"
 USER_LOGIN = UserLoginHandler()
@@ -22,7 +21,7 @@ router = APIRouter()
 
 @router.post("/create_project")
 def create_project(
-        request: Project, user_info: str = Depends(USER_LOGIN.authenticate_token)
+    request: Project, user_info: str = Depends(USER_LOGIN.authenticate_token)
 ):
     """
     Create a new project for a user.
@@ -71,9 +70,9 @@ def get_projects(user_info: str = Depends(USER_LOGIN.authenticate_token)):
 
 @router.put("/update_project/{project_id}")
 def update_project(
-        project_id: str,
-        request: Project,
-        user_info: str = Depends(USER_LOGIN.authenticate_token),
+    project_id: str,
+    request: Project,
+    user_info: str = Depends(USER_LOGIN.authenticate_token),
 ):
     """
     Update a specific project by ID for the authenticated user.
@@ -100,7 +99,7 @@ def update_project(
 
 @router.delete("/delete_project/{project_id}")
 def delete_project(
-        project_id: str, user_info: str = Depends(USER_LOGIN.authenticate_token)
+    project_id: str, user_info: str = Depends(USER_LOGIN.authenticate_token)
 ):
     """
     Delete a project by ID for the authenticated user.
@@ -126,7 +125,6 @@ def delete_project(
         )
 
 
-
 @router.get("/logs/{project_id}")
 def get_4xx_logs(
         project_id: str, user_info: str = Depends(USER_LOGIN.authenticate_token)
@@ -142,34 +140,35 @@ def get_4xx_logs(
         if not file_path.exists():
             return HTTPResponse().failed(response_message="Log file not found.")
 
-        with open(file_path, "r") as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             try:
                 log_entries = json.load(f)
             except json.JSONDecodeError:
                 return HTTPResponse().failed(response_message="Invalid JSON format.")
-        log_entries = log_entries[::-1]  # or log_entries.reverse()
-        filtered_logs = []
-        for entry in log_entries:
-            try:
-                status_code = int(entry.get("status_code", 0))
-                if 400 <= status_code < 600:
-                    filtered_logs.append(entry)
-            except Exception:
-                continue  # Skip problematic entries
+
+        filtered_logs = [
+            entry for entry in log_entries[::-1]
+            if 400 <= int(entry.get("status_code", 0)) < 600
+        ]
 
         return HTTPResponse().success(response_data=filtered_logs)
 
+    except FileNotFoundError:
+        return HTTPResponse().failed(response_message="Log file not found.")
+    except json.JSONDecodeError:
+        return HTTPResponse().failed(response_message="Invalid JSON format.")
     except Exception as e:
-        return HTTPResponse().failed(
-            response_message=f"Failed to retrieve 4xx logs: {str(e)}"
-        )
+        return HTTPResponse().failed(response_message=f"Failed to retrieve logs: {str(e)}")
 
 
 @router.get("/logs/{project_id}/poll")
 def poll_latest_logs(
     project_id: str,
-    since: str = Query(None, description="ISO timestamp to fetch new logs after (defaults to last 5 minutes)"),
-    user_info: str = Depends(USER_LOGIN.authenticate_token)
+    since: str = Query(
+        None,
+        description="ISO timestamp to fetch new logs after (defaults to last 5 minutes)",
+    ),
+    user_info: str = Depends(USER_LOGIN.authenticate_token),
 ):
     """
     Polls for new 4xx/5xx logs since the provided timestamp.
@@ -188,7 +187,9 @@ def poll_latest_logs(
             try:
                 since_dt = datetime.fromisoformat(since)
             except ValueError:
-                return HTTPResponse().failed(response_message="Invalid 'since' timestamp format. Use ISO 8601.")
+                return HTTPResponse().failed(
+                    response_message="Invalid 'since' timestamp format. Use ISO 8601."
+                )
         else:
             since_dt = datetime.utcnow() - timedelta(minutes=5)
 
@@ -202,32 +203,31 @@ def poll_latest_logs(
 
         new_logs = []
         latest_ts = None
-
         for entry in log_entries:
             try:
                 status_code = int(entry.get("status_code", 0))
                 entry_time = datetime.fromisoformat(entry.get("timestamp"))
-                if 400 <= status_code < 600 and entry_time > since_dt:
+                if 200 <= status_code < 600 and entry_time > since_dt:
                     new_logs.append(entry)
                     if latest_ts is None or entry_time > latest_ts:
                         latest_ts = entry_time
             except Exception:
                 continue
 
-        return HTTPResponse().success(response_data={
-            "logs": new_logs,
-            "latest_timestamp": latest_ts.isoformat() if latest_ts else None
-        })
+        return HTTPResponse().success(
+            response_data={
+                "logs": new_logs,
+                "latest_timestamp": latest_ts.isoformat() if latest_ts else None,
+            }
+        )
 
     except Exception as e:
-        return HTTPResponse().failed(
-            response_message=f"Failed to poll logs: {str(e)}"
-        )
+        return HTTPResponse().failed(response_message=f"Failed to poll logs: {str(e)}")
 
 
 @router.get("/generate-dsn/{project_id}")
 def generate_dsn(
-        project_id: str, user_info: str = Depends(USER_LOGIN.authenticate_token)
+    project_id: str, user_info: str = Depends(USER_LOGIN.authenticate_token)
 ):
     """
     Generate a DSN (Data Source Name) for the given project ID and user info.
@@ -243,7 +243,9 @@ def generate_dsn(
         if not project_data:
             return HTTPResponse().failed("projects file not found.")
 
-        user_projects = project_data.get("users", {}).get(user_id, {}).get("projects", [])
+        user_projects = (
+            project_data.get("users", {}).get(user_id, {}).get("projects", [])
+        )
 
         # Find the project
         for project in user_projects:
@@ -252,7 +254,7 @@ def generate_dsn(
                 if "dsn" in project:
                     return HTTPResponse().success(
                         response_data=project["dsn"],
-                        response_message="DSN already exists for this project."
+                        response_message="DSN already exists for this project.",
                     )
 
                 # Otherwise, generate and assign a new DSN
@@ -263,8 +265,7 @@ def generate_dsn(
                 write_data(project_data, "projects.json")
 
                 return HTTPResponse().success(
-                    response_data=dsn,
-                    response_message="DSN successfully generated."
+                    response_data=dsn, response_message="DSN successfully generated."
                 )
 
         return HTTPResponse().failed(f"Project ID {project_id} not found for user.")

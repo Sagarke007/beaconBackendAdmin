@@ -41,19 +41,21 @@ def project_information(user_id: str):
                 project_data = read_data(endpoint_file_path)
                 apis = project_data.get("endpoints", [])
                 if apis:
-                    total_response_time = sum(api.get("response_time", 0) for api in apis)
+                    total_response_time = sum(
+                        api.get("response_time", 0) for api in apis
+                    )
                     api_count = len(apis)
                     framework = apis[-1].get("framework", "FastApi")
                     average_response_time = (
                         f"{round(total_response_time / api_count, 4)} sec"
                     )
-            except Exception:
+            except (FileNotFoundError, json.JSONDecodeError):
                 pass
 
         # Log summary (date-wise grouping)
         if log_file_path.exists():
             try:
-                with open(log_file_path, "r") as f:
+                with open(log_file_path, "r", encoding="utf-8") as f:
                     log_entries = json.load(f)
 
                 for entry in log_entries:
@@ -65,7 +67,7 @@ def project_information(user_id: str):
                         try:
                             dt = datetime.fromisoformat(timestamp)
                             date_str = dt.date().isoformat()
-                        except Exception:
+                        except ValueError:
                             continue  # Skip bad timestamp
 
                         if 200 <= status_code < 300:
@@ -74,9 +76,9 @@ def project_information(user_id: str):
                             datewise_counts[date_str]["4xx"] += 1
                         elif 500 <= status_code < 600:
                             datewise_counts[date_str]["5xx"] += 1
-                    except Exception:
+                    except (ValueError, KeyError):
                         continue
-            except Exception:
+            except (FileNotFoundError, json.JSONDecodeError):
                 pass
 
         # Convert to expected format
@@ -89,8 +91,9 @@ def project_information(user_id: str):
                     "2xx": datewise_counts[date]["2xx"],
                     "4xx": datewise_counts[date]["4xx"],
                     "5xx": datewise_counts[date]["5xx"],
-                } for date in seq_dates
-            }
+                }
+                for date in seq_dates
+            },
         }
 
         # Assemble final project info
