@@ -164,9 +164,9 @@ def calculate_average_metrics_by_path(project_path):
                 "TPM": round(avg_tpm, 3),
                 "P50": f"{round(p50 * 1000, 2)} ms",
                 "P95": f"{round(p95 * 1000, 2)} ms",
-                "Failure %": f"{round(failure_percent, 2)}%",
+                "Failure": f"{round(failure_percent, 2)}%",
                 "APDEX": round(apdex, 3),
-                "Requests Count": api_hit_count,
+                "Requests_Count": api_hit_count,
             }
         )
 
