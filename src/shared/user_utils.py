@@ -233,11 +233,15 @@ class UserLoginHandler:
 
         # Fix for E0701: Reorder the except clauses
         except jwt.exceptions.InvalidSignatureError as exc:
-            raise HTTPException(status_code=401, detail="Token signature invalid") from exc
+            raise HTTPException(
+                status_code=401, detail="Token signature invalid"
+            ) from exc
         except jwt.exceptions.DecodeError as exc:
             raise HTTPException(status_code=401, detail="Invalid token format") from exc
         except KeyError as exc:
-            raise HTTPException(status_code=401, detail="Missing required token claims") from exc
+            raise HTTPException(
+                status_code=401, detail="Missing required token claims"
+            ) from exc
 
     def decode_jwt_token(self, token: str) -> tuple:
         """
@@ -317,7 +321,7 @@ class UserLoginHandler:
             # Sort by sign_up_date descending (newest first)
             user_list.sort(key=lambda x: x.get("last_log_in", ""), reverse=True)
             return True, user_list
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception
             return False, f"Unable to retrieve users: {str(e)}"
 
     def verify_and_change_password(
@@ -399,3 +403,29 @@ class UserLoginHandler:
             ]
         except json.JSONDecodeError:
             return []
+
+    async def authenticate_token_ws(self, token_value: str):
+        """
+        Validates a token string (e.g., from WebSocket headers).
+        """
+        try:
+            # Example: decode JWT token (adjust based on your actual logic)
+            _, payload = self.decode_jwt_token(token_value)
+
+            user_id = payload.get("user_id")
+            if not user_id:
+                raise ValueError("Invalid token payload")
+
+            return True, payload
+
+            # Fix for E0701: Reorder the except clauses
+        except jwt.exceptions.InvalidSignatureError as exc:
+            raise HTTPException(
+                status_code=401, detail="Token signature invalid"
+            ) from exc
+        except jwt.exceptions.DecodeError as exc:
+            raise HTTPException(status_code=401, detail="Invalid token format") from exc
+        except KeyError as exc:
+            raise HTTPException(
+                status_code=401, detail="Missing required token claims"
+            ) from exc

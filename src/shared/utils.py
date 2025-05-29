@@ -92,7 +92,6 @@ def decode_from_base64(data: str) -> str:
     return base64.b64decode(data.encode("utf-8")).decode("utf-8")
 
 
-
 def generate_fake_value(field_name: str, field_type: str) -> Any:
     """Generate appropriate fake data based on field name and type"""
     field_name = field_name.lower()

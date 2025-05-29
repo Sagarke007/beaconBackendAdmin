@@ -26,6 +26,9 @@ class UserRegistration(BaseModel):
 
     @field_validator("first_name", "last_name", "nick_name")
     def validate_name_fields(cls, name_value: str) -> str:
+        """
+        Validate name fields to ensure they are not empty, have a valid length
+        """
         max_length = 20
         min_length = 2
         if not name_value.strip():
@@ -44,6 +47,7 @@ class UserRegistration(BaseModel):
 
     @field_validator("email_address")
     def validate_email_length(cls, email_value: EmailStr) -> EmailStr:
+        """Validate email address to ensure it does not exceed a certain length."""
         max_length = 100
         if len(email_value) > max_length:
             raise ValueError(f"Email address must not exceed {max_length} characters.")
@@ -51,6 +55,7 @@ class UserRegistration(BaseModel):
 
     @field_validator("phone_number")
     def validate_phone_number(cls, phone_number_value):
+        """Validate phone number to ensure it is a 10-digit numeric value."""
         if phone_number_value:
             if not phone_number_value.isdigit() or len(phone_number_value) != 10:
                 raise ValueError("Phone number must be a 10-digit numeric value.")

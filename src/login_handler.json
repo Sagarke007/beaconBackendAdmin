@@ -8,8 +8,8 @@
       "email": "sagarpython@gmail.com",
       "password": "$2b$12$NkIPXpiSV7.ZDCsFBuHUjeaN1amYQXwya3JYUbD/w3iyNf3E18UWa",
       "phone_number": null,
-      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InNhZ2FycHl0aG9uQGdtYWlsLmNvbSIsInVzZXJfaWQiOiJlMDIwOWVjNC0zZmM0LTRjYjItODczZC1jYTlkYzBlZjU5NmIiLCJleHAiOjE3NDczMDM2MjF9.17Hf3bve9VI5LbKL2V5XRb_g6EP1FmDlFCdz8W03MZY",
-      "last_logged_in": "2025-05-15T09:07:01.893764",
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InNhZ2FycHl0aG9uQGdtYWlsLmNvbSIsInVzZXJfaWQiOiJlMDIwOWVjNC0zZmM0LTRjYjItODczZC1jYTlkYzBlZjU5NmIiLCJleHAiOjE3NDgyNDg1ODJ9.aYhyZbRIsaRpMmOicnnHT_4R4ikrU90Q3-NYHq_W-w0",
+      "last_logged_in": "2025-05-26T07:36:22.633313",
       "sign_up_date": "2025-05-05T07:08:57.204475",
       "is_active": true,
       "is_validate": false
@@ -50,8 +50,8 @@
       "email": "sobhit.mahalinga@knowledgeexcel.com",
       "password": "$2b$12$jCwhCUAmLtGmoyv3YC3Dmur4LadrXaw0RlZ7R8IJz5eTz9brAJjW6",
       "phone_number": null,
-      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InNvYmhpdC5tYWhhbGluZ2FAa25vd2xlZGdlZXhjZWwuY29tIiwidXNlcl9pZCI6IjY4NjE5NGRhLTFmOTgtNDhmZi1hZmJiLTRiMGZhOTZiOTQ1ZiIsImV4cCI6MTc0NzMwNzg2MX0.vminpaU4OhSeJbMlyPpXpbKiDr4YbBbKaDo7qTmmcmw",
-      "last_logged_in": "2025-05-15T10:17:41.431187",
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InNvYmhpdC5tYWhhbGluZ2FAa25vd2xlZGdlZXhjZWwuY29tIiwidXNlcl9pZCI6IjY4NjE5NGRhLTFmOTgtNDhmZi1hZmJiLTRiMGZhOTZiOTQ1ZiIsImV4cCI6MTc0ODUxODk1NX0.Up8KnBymYhsUNKIAeRLEZPwHiMf_Qs8YLMp62Fqzb4A",
+      "last_logged_in": "2025-05-29T10:42:35.821765",
       "sign_up_date": "2025-05-14T05:15:30.815703",
       "is_active": true,
       "is_validate": false

@@ -3,11 +3,13 @@ This module provides utility functions to extract and process project informatio
 """
 
 from collections import defaultdict
+import numpy as np
 import json
 from datetime import datetime
 from pathlib import Path
 
 from shared.database import read_data
+
 
 PROJECTS_FILE = "projects.json"
 LOCAL_DIR = Path("../health_data")
@@ -111,3 +113,61 @@ def project_information(user_id: str):
             }
         )
     return project_details
+
+
+def calculate_average_metrics_by_path(project_path):
+    """
+    Calculate average metrics for log entries, grouped by path.
+
+    Args:
+        log_entries (list): A list of dictionaries containing log details.
+
+    Returns:
+        dict: A dictionary where keys are paths and values are average metrics for each path.
+    """
+    log_entries = read_data(project_path)
+    path_metrics = defaultdict(list)
+    path_users = defaultdict(set)
+
+    # Group process times and user_ids by path
+    for entry in log_entries:
+        path = entry.get("path", "/unknown")
+        process_time = entry.get("process_time", 0.0)
+        status_code = entry.get("status_code", 200)
+        user_id = entry.get("user_id", None)
+
+        # Store relevant data per path
+        path_metrics[path].append(
+            {"process_time": process_time, "status_code": status_code}
+        )
+
+        if user_id:
+            path_users[path].add(user_id)
+
+    data_store = []
+    for path, entries in path_metrics.items():
+        process_times = [e["process_time"] for e in entries]
+        status_codes = [e["status_code"] for e in entries]
+
+        count = len(entries)
+
+        avg_tpm = sum(1.0 / pt for pt in process_times if pt > 0) / count
+        p50 = np.percentile(process_times, 50)
+        p95 = np.percentile(process_times, 95)
+        failure_percent = (sum(1 for sc in status_codes if sc >= 400) / count) * 100
+        apdex = sum(1 for pt in process_times if pt <= 0.5) / count
+        api_hit_count = count
+
+        data_store.append(
+            {
+                "Path": path,
+                "TPM": round(avg_tpm, 3),
+                "P50": f"{round(p50 * 1000, 2)} ms",
+                "P95": f"{round(p95 * 1000, 2)} ms",
+                "Failure %": f"{round(failure_percent, 2)}%",
+                "APDEX": round(apdex, 3),
+                "Requests Count": api_hit_count,
+            }
+        )
+
+    return data_store

@@ -11,7 +11,12 @@ import json
 
 from shared.user_utils import UserLoginHandler
 from shared.http_responses import HTTPResponse
-from shared.utils import enhance_endpoints_with_fake_data, check_project_id_exists, decode_dsn, check_client_id_exists
+from shared.utils import (
+    enhance_endpoints_with_fake_data,
+    check_project_id_exists,
+    decode_dsn,
+    check_client_id_exists,
+)
 from shared.database import read_data
 from router.gatekeeper.model import SchemaRequest
 
@@ -100,7 +105,9 @@ async def save_api_response(payload: dict = Body(...)):
 
         return HTTPResponse().success(response_message=f"Response saved to {file_path}")
     except IOError as e:
-        return HTTPResponse().failed(response_message=f"Failed to save response: {str(e)}")
+        return HTTPResponse().failed(
+            response_message=f"Failed to save response: {str(e)}"
+        )
 
 
 @router.get("/retrieve-file/{project_id}")
@@ -125,7 +132,7 @@ async def get_health_data(
             data = json.load(f)
         endpoints = data.get("endpoints", {})
         return HTTPResponse().success(response_data=endpoints)
-    except IOError as e:
+    except IOError as e:  # pytest: disable=broad-exception
         return HTTPResponse().failed(
             response_message=f"Failed to retrieve health data: {str(e)}"
         )

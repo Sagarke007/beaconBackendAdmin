@@ -1,6 +1,7 @@
 """
 Beacon Router
 """
+
 import json
 from datetime import datetime, timedelta
 from fastapi import Depends, APIRouter, HTTPException, Query
@@ -11,7 +12,7 @@ from router.insights.model import Project
 from router.gatekeeper.gatekeeper_router import LOCAL_DIR
 from shared.http_responses import HTTPResponse
 from shared.utils import create_dsn
-from shared.insight_utils import project_information
+from shared.insight_utils import project_information, calculate_average_metrics_by_path
 
 
 DATA_FILE = "projects.json"
@@ -43,7 +44,7 @@ def create_project(
         return HTTPResponse().success(
             response_message=f"Successfully created project {new_project['name']}"
         )
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception
         return HTTPResponse().failed(
             response_message=f"Failed to create project: {str(e)}"
         )
@@ -62,7 +63,7 @@ def get_projects(user_info: str = Depends(USER_LOGIN.authenticate_token)):
         return HTTPResponse().success(
             response_data={"client_name": client_name, "project": project_details}
         )
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception
         return HTTPResponse().failed(
             response_message=f"Failed to fetch projects: {str(e)}"
         )
@@ -91,7 +92,7 @@ def update_project(
                     response_message=f"Successfully updated project {project['name']}"
                 )
         raise HTTPException(status_code=404, detail="Project not found")
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception
         return HTTPResponse().failed(
             response_message=f"Failed to update project: {str(e)}"
         )
@@ -119,7 +120,7 @@ def delete_project(
         write_data(data, DATA_FILE)
 
         return HTTPResponse().success(response_message="Successfully deleted project")
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception
         return HTTPResponse().failed(
             response_message=f"Failed to delete project: {str(e)}"
         )
@@ -127,7 +128,7 @@ def delete_project(
 
 @router.get("/logs/{project_id}")
 def get_4xx_logs(
-        project_id: str, user_info: str = Depends(USER_LOGIN.authenticate_token)
+    project_id: str, user_info: str = Depends(USER_LOGIN.authenticate_token)
 ):
     """
     Returns all log entries with 4xx status codes for authenticated user.
@@ -147,8 +148,9 @@ def get_4xx_logs(
                 return HTTPResponse().failed(response_message="Invalid JSON format.")
 
         filtered_logs = [
-            entry for entry in log_entries[::-1]
-            if 400 <= int(entry.get("status_code", 0)) < 600
+            entry
+            for entry in log_entries[::-1]
+            if 200 <= int(entry.get("status_code", 0)) < 600
         ]
 
         return HTTPResponse().success(response_data=filtered_logs)
@@ -157,8 +159,10 @@ def get_4xx_logs(
         return HTTPResponse().failed(response_message="Log file not found.")
     except json.JSONDecodeError:
         return HTTPResponse().failed(response_message="Invalid JSON format.")
-    except Exception as e:
-        return HTTPResponse().failed(response_message=f"Failed to retrieve logs: {str(e)}")
+    except Exception as e:  # pylint: disable=broad-exception
+        return HTTPResponse().failed(
+            response_message=f"Failed to retrieve logs: {str(e)}"
+        )
 
 
 @router.get("/logs/{project_id}/poll")
@@ -221,7 +225,7 @@ def poll_latest_logs(
             }
         )
 
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception
         return HTTPResponse().failed(response_message=f"Failed to poll logs: {str(e)}")
 
 
@@ -270,7 +274,38 @@ def generate_dsn(
 
         return HTTPResponse().failed(f"Project ID {project_id} not found for user.")
 
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception
         return HTTPResponse().failed(
             response_message=f"Failed to generate DSN: {str(e)}"
+        )
+
+
+@router.post("/calculate-metrics/{project_id}")
+async def calculate_metrics_endpoint(
+    project_id: str, user_info: str = Depends(USER_LOGIN.authenticate_token)
+):
+    """
+    Endpoint to calculate average metrics grouped by path.
+
+    Args:
+        log_entries (List[Dict]): A list of log entries.
+
+    Returns:
+        dict: Average metrics grouped by path.
+    """
+    try:
+        _, user_info_data = user_info
+        user_id = user_info_data["user_id"]
+
+        file_path = LOCAL_DIR / "api_log" / user_id / f"{project_id}.json"
+        if not file_path.exists():
+            return HTTPResponse().failed(response_message="Log file not found.")
+
+        # Call the function to calculate metrics
+        result = calculate_average_metrics_by_path(file_path)
+
+        return HTTPResponse().success(response_data=result)
+    except Exception as e:  # pylint: disable=broad-exception
+        return HTTPResponse().failed(
+            response_message=f"Failed to calculate metrics: {str(e)}"
         )
