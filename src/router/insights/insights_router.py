@@ -280,7 +280,7 @@ def generate_dsn(
         )
 
 
-@router.post("/calculate-metrics/{project_id}")
+@router.get("/calculate-metrics/{project_id}")
 async def calculate_metrics_endpoint(
     project_id: str, user_info: str = Depends(USER_LOGIN.authenticate_token)
 ):

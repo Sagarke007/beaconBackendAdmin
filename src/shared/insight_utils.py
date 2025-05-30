@@ -161,14 +161,14 @@ def calculate_average_metrics_by_path(project_path):
 
         data_store.append(
             {
-                "Method": method,
-                "Path": path,
-                "TPM": round(avg_tpm, 3),
-                "P50": f"{round(p50 * 1000, 2)} ms",
-                "P95": f"{round(p95 * 1000, 2)} ms",
-                "Failure": f"{round(failure_percent, 2)}%",
-                "APDEX": round(apdex, 3),
-                "Requests_Count": api_hit_count,
+                "type": method,
+                "path": path,
+                "tpm": round(avg_tpm, 3),
+                "p50": f"{round(p50 * 1000, 2)} ms",
+                "p95": f"{round(p95 * 1000, 2)} ms",
+                "failure": f"{round(failure_percent, 2)}%",
+                "apdex": round(apdex, 3),
+                "requests_count": api_hit_count,
             }
         )
 
