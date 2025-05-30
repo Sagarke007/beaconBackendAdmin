@@ -1,68 +1,126 @@
+"""
+Gatekeeper Router Module
 
+This module handles API endpoints for uploading and retrieving health data,
+as well as generating fake data based on schemas.
+"""
 
 from fastapi import APIRouter, Body, HTTPException, Depends
 from pathlib import Path
 import json
 
 from shared.user_utils import UserLoginHandler
-
 from shared.http_responses import HTTPResponse
-
-from shared.user_client_project import UserClientProjectManager
+from shared.utils import (
+    enhance_endpoints_with_fake_data,
+    check_project_id_exists,
+    decode_dsn,
+    check_client_id_exists,
+)
+from shared.database import read_data
+from router.gatekeeper.model import SchemaRequest
 
 router = APIRouter()
 
 LOCAL_DIR = Path("../health_data")
-
 LOCAL_DIR.mkdir(parents=True, exist_ok=True)  # Create the folder if it doesn't exist
 
-
-import os
-import json
-from fastapi import APIRouter, Body, HTTPException
-
-router = APIRouter()
-
 USER_LOGIN = UserLoginHandler()
-# Initialize manager
-manager = UserClientProjectManager()
+
 
 @router.post("/upload/send-api-health-data")
-async def receive_health_data(payload: dict = Body(...),):
+async def receive_health_data(payload: dict = Body(...)):
     """
     Receive health data from the API and save it into client_id folder as project_id.json
     """
+    dsn = payload.get("dsn")
+    success, user_id, project_id = decode_dsn(dsn)
+    if not success:
+        return HTTPResponse().failed(response_message="Invalid DSN")
 
-    client_id = payload.get("client_id")
-    project_id = payload.get("project_id")
+    user_data = read_data("login_handler.json")
+    if not check_client_id_exists(user_id, user_data):
+        return HTTPResponse().failed(response_message="Unauthorized access")
 
-    if not client_id or not project_id:
-        return HTTPResponse().failed(response_message="client_id or project_id missing")
+    project_data = read_data("projects.json")
+    if not check_project_id_exists(project_id, project_data):
+        return HTTPResponse().failed(response_message="Project ID does not exist")
 
-    client_dir = LOCAL_DIR / client_id
+    user_dir = LOCAL_DIR / "api_endpoint" / user_id
+    user_dir.mkdir(parents=True, exist_ok=True)
 
-    client_dir.mkdir(parents=True, exist_ok=True)
-
-    file_path = client_dir / f"{project_id}.json"
+    file_path = user_dir / f"{project_id}.json"
 
     try:
-        with open(file_path, "w") as f:
+        payload.pop("DSN", None)
+        with open(file_path, "w", encoding="utf-8") as f:
             json.dump(payload, f, indent=2)
 
         return HTTPResponse().success(response_message=f"File saved to {file_path}")
-    except Exception as e:
+    except IOError as e:
         return HTTPResponse().failed(response_message=f"Failed to save file: {str(e)}")
 
 
+@router.post("/upload/save-api-response")
+async def save_api_response(payload: dict = Body(...)):
+    """
+    Save or append API response payload to response.json under the client_id folder,
+    removing 'client_id', 'project_id', and 'response' keys if present.
+    """
+    dsn = payload.get("dsn")
+    success, user_id, project_id = decode_dsn(dsn)
+    if not success:
+        return HTTPResponse().failed(response_message="Invalid DSN")
+
+    user_data = read_data("login_handler.json")
+    if not check_client_id_exists(user_id, user_data):
+        return HTTPResponse().failed(response_message="Unauthorized access")
+
+    project_data = read_data("projects.json")
+    if not check_project_id_exists(project_id, project_data):
+        return HTTPResponse().failed(response_message="Project ID does not exist")
+
+    user_dir = LOCAL_DIR / "api_log" / user_id
+    user_dir.mkdir(parents=True, exist_ok=True)
+
+    file_path = user_dir / f"{project_id}.json"
+
+    try:
+        payload.pop("DSN", None)
+        if isinstance(payload, dict) and "response" in payload:
+            payload = payload["response"]
+
+        if file_path.exists():
+            with open(file_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if not isinstance(data, list):
+                    data = [data]
+        else:
+            data = []
+
+        data.append(payload)
+
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+
+        return HTTPResponse().success(response_message=f"Response saved to {file_path}")
+    except IOError as e:
+        return HTTPResponse().failed(
+            response_message=f"Failed to save response: {str(e)}"
+        )
+
+
 @router.get("/retrieve-file/{project_id}")
-async def get_health_data(project_id: str,user_info: str = Depends(USER_LOGIN.authenticate_token),):
+async def get_health_data(
+    project_id: str, user_info: str = Depends(USER_LOGIN.authenticate_token)
+):
     """
     Retrieve health data stored inside client_id/project_id.json
     """
     try:
         _, user_info_data = user_info
         user_id = user_info_data["user_id"]
-        file_path = LOCAL_DIR / user_id / f"{project_id}.json"
+        file_path = LOCAL_DIR / "api_endpoint" / user_id / f"{project_id}.json"
         if not file_path.exists():
             return HTTPResponse().failed(
                 response_message={
@@ -70,50 +128,39 @@ async def get_health_data(project_id: str,user_info: str = Depends(USER_LOGIN.au
                 }
             )
 
-        with open(file_path, "r") as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
         endpoints = data.get("endpoints", {})
-
         return HTTPResponse().success(response_data=endpoints)
-    except Exception as e:
-        return HTTPResponse().failed(response_message=f"Failed to retrieve health data: {str(e)}")
-
-@router.get("/user-client-projects/")
-async def get_user_client_projects(
-        user_info: tuple = Depends(USER_LOGIN.authenticate_token)
-):
-    """
-    Get the client and projects associated with the authenticated user
-
-    Returns:
-        dict: {
-            "success": bool,
-            "message": str,
-            "data": {
-                "client_id": str,
-                "project_ids": List[str]
-            }
-        }
-    """
-    try:
-        # Extract user_id from the authenticated token
-        _, user_info = user_info
-
-        user_id = user_info.get("user_id")
-        if not user_id:
-            return HTTPResponse.failed(response_message="User ID not found in token")
-
-        # Get the client and projects for this user
-        client_name = manager.get_client_for_user(user_id)
-        project_ids = manager.get_projects_for_user(user_id)
-
-        return HTTPResponse().success(response_data= {
-                "client_name": client_name,
-                "project_ids": project_ids
-            }
+    except IOError as e:  # pytest: disable=broad-exception
+        return HTTPResponse().failed(
+            response_message=f"Failed to retrieve health data: {str(e)}"
         )
 
-    except Exception as e:
+
+@router.post("/schema/generate-data")
+async def generate_data(req: SchemaRequest):
+    """
+    Generate fake data based on provided schema
+
+    Example Request Body:
+    {
+        "schema_config": {
+            "first_name": "string",
+            "last_name": "string",
+            "email": "string",
+            "age": "number",
+            "is_active": "boolean"
+        }
+    }
+    """
+    try:
+        if not req.schema_config:
+            raise HTTPException(status_code=400, detail="Schema cannot be empty")
+
+        data = enhance_endpoints_with_fake_data(req.schema_config)
+        return HTTPResponse().success(response_data=data)
+    except ValueError as e:
         return HTTPResponse().failed(
-            response_message=f"Failed to retrieve client and projects: {str(e)}"
+            response_message=f"Failed to generate data: {str(e)}"
         )
