@@ -10,7 +10,6 @@ from pathlib import Path
 
 from shared.database import read_data
 
-
 PROJECTS_FILE = "projects.json"
 LOCAL_DIR = Path("../health_data")
 
@@ -132,13 +131,14 @@ def calculate_average_metrics_by_path(project_path):
     # Group process times and user_ids by path
     for entry in log_entries:
         path = entry.get("path", "/unknown")
+        method = entry.get("method", "unknown")
         process_time = entry.get("process_time", 0.0)
         status_code = entry.get("status_code", 200)
         user_id = entry.get("user_id", None)
 
         # Store relevant data per path
         path_metrics[path].append(
-            {"process_time": process_time, "status_code": status_code}
+            {"process_time": process_time, "status_code": status_code, "method": method}
         )
 
         if user_id:
@@ -148,6 +148,7 @@ def calculate_average_metrics_by_path(project_path):
     for path, entries in path_metrics.items():
         process_times = [e["process_time"] for e in entries]
         status_codes = [e["status_code"] for e in entries]
+        method = entries[0]["method"] if entries else None  # Take only one method
 
         count = len(entries)
 
@@ -160,6 +161,7 @@ def calculate_average_metrics_by_path(project_path):
 
         data_store.append(
             {
+                "Method": method,
                 "Path": path,
                 "TPM": round(avg_tpm, 3),
                 "P50": f"{round(p50 * 1000, 2)} ms",
