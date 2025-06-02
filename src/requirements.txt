@@ -13,3 +13,4 @@ starlette
 uvicorn
 pydantic[email]
 pyjwt
+faker
